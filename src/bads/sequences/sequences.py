@@ -3,7 +3,22 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from typing import Self
 
+from bads.alphabet import (
+    DNA_AMBIGUOUS_ALPHABET,
+    DNA_UNAMBIGUOUS_ALPHABET,
+    RNA_AMBIGUOUS_ALPHABET,
+    RNA_UNAMBIGUOUS_ALPHABET,
+    PROTEIN_ALPHABET,
+)
 from bads.sequences.maps import DNA_COMPLEMENT, DNA_TO_AA, RNA_COMPLEMENT, RNA_TO_AA
+
+
+class InvalidCharacterError(ValueError):
+    """Exception raised for invalid characters in a sequence.
+
+    This exception is raised when a sequence contains characters not
+    recognized by the sequence type.
+    """
 
 
 class TranslationError(Exception):
@@ -109,20 +124,20 @@ class BaseSequence(ABC):
 
     @classmethod
     @abstractmethod
-    def alphabet(cls) -> str:
+    def alphabet(cls) -> set:
         """Return the valid alphabet for this sequence type.
 
         Returns:
-            str: String containing all valid characters for this sequence type.
+            set: a collection containing all unique and valid characters for this sequence type.
         """
         ...
 
-    def validate_sequence(self, seq: str, alphabet: str) -> str:
+    def validate_sequence(self, seq: str, alphabet: set[str]) -> str:
         """Validate that all characters in the sequence are in the alphabet.
 
         Args:
             seq (str): The sequence to validate.
-            alphabet (str): String of valid characters.
+            alphabet (set): Set of valid characters.
 
         Returns:
             str: The validated sequence.
@@ -130,13 +145,12 @@ class BaseSequence(ABC):
         Raises:
             ValueError: If sequence contains characters not in the alphabet.
         """
-        valid_len = sum([seq.count(base) for base in alphabet])
-        if valid_len != len(seq):
-            invalid_chars = set(seq).difference(alphabet)
-            raise ValueError(
-                f"Invalid characters for {self.__class__.__name__}: {invalid_chars}"
-            )
-        return seq
+        if set(seq) <= alphabet:
+            return seq
+        invalid_chars = set(seq).difference(alphabet)
+        raise InvalidCharacterError(
+            f"Invalid characters for {self.__class__.__name__}: {invalid_chars}"
+        )
 
     def reverse(self) -> Self:
         """Return the reversed sequence.
@@ -382,13 +396,15 @@ class DNASequence(TranslatableSequence):
         super().__init__(seq)
 
     @classmethod
-    def alphabet(cls) -> str:
+    def alphabet(cls, ambiguous: bool = True) -> set[str]:
         """Return the DNA alphabet.
 
         Returns:
-            str: "ACGT"
+            set[str]
         """
-        return "ACGT"
+        if ambiguous:
+            return DNA_AMBIGUOUS_ALPHABET
+        return DNA_UNAMBIGUOUS_ALPHABET
 
     @classmethod
     def complement_map(cls) -> dict[str, str]:
@@ -532,13 +548,15 @@ class RNASequence(TranslatableSequence):
         super().__init__(seq)
 
     @classmethod
-    def alphabet(cls) -> str:
+    def alphabet(cls, ambiguous: bool = True) -> set[str]:
         """Return the RNA alphabet.
 
         Returns:
             str: "ACGU"
         """
-        return "ACGU"
+        if ambiguous:
+            return RNA_AMBIGUOUS_ALPHABET
+        return RNA_UNAMBIGUOUS_ALPHABET
 
     @classmethod
     def complement_map(cls) -> dict[str, str]:
@@ -615,13 +633,13 @@ class ProteinSequence(BaseSequence):
         super().__init__(seq)
 
     @classmethod
-    def alphabet(cls) -> str:
+    def alphabet(cls) -> set[str]:
         """Return the protein alphabet.
 
         Returns:
             str: "ACDEFGHIKLMNPQRSTVWY" (20 standard amino acids)
         """
-        return "ACDEFGHIKLMNPQRSTVWY"
+        return PROTEIN_ALPHABET
 
 
 # class BioSequence:
