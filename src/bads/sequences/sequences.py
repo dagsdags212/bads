@@ -11,22 +11,7 @@ from bads.alphabet import (
     PROTEIN_ALPHABET,
 )
 from bads.sequences.maps import DNA_COMPLEMENT, DNA_TO_AA, RNA_COMPLEMENT, RNA_TO_AA
-
-
-class InvalidCharacterError(ValueError):
-    """Exception raised for invalid characters in a sequence.
-
-    This exception is raised when a sequence contains characters not
-    recognized by the sequence type.
-    """
-
-
-class TranslationError(Exception):
-    """Exception raised for errors during sequence translation.
-
-    This exception is raised when translation fails due to invalid
-    coding sequences, such as missing start codons or stop codons.
-    """
+from bads.exceptions import InvalidCharacterError, TranslationError
 
 
 class BaseSequence(ABC):
@@ -122,6 +107,30 @@ class BaseSequence(ABC):
         """
         return s in self.seq
 
+    def __add__(self, other: "Sequence") -> "Sequence":
+        """Concatenate two sequences of the same types.
+
+        Args:
+            other (Sequence): The sequence to concatenate.
+
+        Returns:
+            Sequence: The concatenated sequence.
+        """
+        assert type(self) == type(other), f"Cannot concatenate sequence of different types ({type(self)} + {type(other)})"
+        return self.__class__(self.seq + other.seq)
+
+    def __radd__(self, other: "Sequence") -> "Sequence":
+        """Concatenate two sequences of the same types.
+
+        Args:
+            other (Sequence): The sequence to concatenate.
+
+        Returns:
+            Sequence: The concatenated sequence.
+        """
+        assert type(self) == type(other), f"Cannot concatenate sequence of different types ({type(other)} + {type(self)})"
+        return self.__class__(other.seq + self.seq)
+
     @classmethod
     @abstractmethod
     def alphabet(cls) -> set:
@@ -164,6 +173,28 @@ class BaseSequence(ABC):
             'TGCA'
         """
         return type(self)(seq=self.seq[::-1])
+
+    def count(self, substr: str) -> int:
+        """Count the number of occurrences of a substring in the sequence.
+
+        Args:
+            substr (str): The substring to count.
+
+        Returns:
+            int: The number of occurrences of the substring.
+        """
+        return self.seq.count(substr)
+
+    def find(self, substr: str) -> int:
+        """Find the index of the first occurrence of a substring in the sequence.
+
+        Args:
+            substr (str): The substring to find.
+
+        Returns:
+            int: The index of the first occurrence of the substring.
+        """
+        return self.seq.find(substr)
 
     def frequency(self) -> dict[str, int]:
         """Calculate the frequency of each character in the sequence.
