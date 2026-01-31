@@ -1,5 +1,5 @@
 import pytest
-from bads.sequtils import search_first_occurrence, search_all_occurrences
+from bads.sequtils import search_first_occurrence, search_all_occurrences, BoyerMoore
 
 
 # Pattern matching algorithms
@@ -20,3 +20,9 @@ def test_search_all_occurrences(seq):
     assert search_all_occurrences(seq, "ATA") == [0, 5, 9, 12]
     assert search_all_occurrences(seq, "TC") == [16]
     assert search_all_occurrences(seq, "XYZ") == []
+
+# Boyer-Moore
+def test_boyer_moore():
+    bm = BoyerMoore("ACTG", "ACCA")
+    match = bm.search("ATAGAACCAATGAACCATGATGAACCATGGATACCCAACCACC")
+    assert match == [5, 13, 23, 37]
